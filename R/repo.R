@@ -63,9 +63,9 @@ package_repo <- function(desc, meta) {
     return(meta[["repo"]])
   }
 
-  # Otherwise try and guess from BugReports + URLs
+  # Otherwise try and guess from `BugReports` (1st priority) and `URL`s (2nd priority)
   urls <- c(
-    desc$get_field("BugReports", default = character()),
+    sub("/issues/?", "/", desc$get_field("BugReports", default = character())),
     desc$get_urls()
   )
 
@@ -89,7 +89,7 @@ repo_meta <- function(home = NULL, source = NULL, issue = NULL, user = NULL) {
 }
 
 repo_meta_gh_like <- function(link, branch = NULL) {
-  gh <- parse_github_like_url(link)
+  gh <- parse_github_like_url(link, grepl("^https?://gitlab\\.", link))
   branch <- branch %||% "master"
   repo_meta(
     paste0(gh$host, "/", gh$owner, "/", gh$repo, "/"),
@@ -100,12 +100,12 @@ repo_meta_gh_like <- function(link, branch = NULL) {
 }
 
 # adapted from usethis:::github_link()
-parse_github_like_url <- function(link) {
+parse_github_like_url <- function(link, allow_subgroups = FALSE) {
   rx <- paste0(
     "^",
     "(?<host>https?://[^/]+)/",
     "(?<owner>[^/]+)/",
-    "(?<repo>[^/#]+)"
+    "(?<repo>[^#", "/"[!allow_subgroups], "]+)/"
   )
-  rematch2::re_match(link, rx)
+  rematch2::re_match(sub("([^/]$)", "\\1/", link), rx)
 }
