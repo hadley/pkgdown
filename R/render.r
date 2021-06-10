@@ -432,7 +432,102 @@ data_deps <- function(pkg, depth) {
       )
     )
   )
-  deps <- bslib::bs_theme_dependencies(bs_theme)
+
+  # map secondary to component-active-bg (thus also dropdown-link-active-bg)
+  # unless a value was set by the user
+  if (is.null(pkg$meta[["template"]]$bslib$`component-active-bg`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "component-active-bg" = as.character(
+        bslib::bs_get_variables(bs_theme, "secondary")
+      )
+    )
+  }
+
+  # map body color to navbar colors
+  if (is.null(pkg$meta[["template"]]$bslib$`navbar-light-color`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "navbar-light-color" = "rgba($body-color, 0.8)",
+      .where = "declarations"
+    )
+  }
+  if (is.null(pkg$meta[["template"]]$bslib$`navbar-light-hover-color`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "navbar-light-hover-color" = "rgba($body-color, 0.9)",
+      .where = "declarations"
+    )
+  }
+
+  # map primary to navbar-light-active-color + component-active-color + headings-color
+  # unless a value was set by the user
+  if (is.null(pkg$meta[["template"]]$bslib$`navbar-light-active-color`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "navbar-light-active-color " = as.character(
+        bslib::bs_get_variables(bs_theme, "primary")
+      )
+    )
+  }
+  if (is.null(pkg$meta[["template"]]$bslib$`component-active-color`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "component-active-color" = as.character(
+        bslib::bs_get_variables(bs_theme, "primary")
+      )
+    )
+  }
+  if (is.null(pkg$meta[["template"]]$bslib$`headings-color`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "headings-color" = as.character(
+        bslib::bs_get_variables(bs_theme, "primary")
+      )
+    )
+  }
+
+  # map component-active-color to dropdown-link-active-color
+  if (is.null(pkg$meta[["template"]]$bslib$`dropdown-link-active-color`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "dropdown-link-active-color" = "$component-active-color",
+      .where = "declarations"
+    )
+  }
+
+  # map primary&secondary to dropdown hover/focus
+  if (is.null(pkg$meta[["template"]]$bslib$`dropdown-link-hover-color`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "dropdown-link-hover-color" = "$primary",
+      .where = "declarations"
+    )
+  }
+  if (is.null(pkg$meta[["template"]]$bslib$`dropdown-link-hover-bg`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "dropdown-link-hover-bg" = "$secondary",
+      .where = "declarations"
+    )
+  }
+
+  if (is.null(pkg$meta[["template"]]$bslib$`border-color`)) {
+    bs_theme <- bslib::bs_add_variables(
+      bs_theme,
+      "border-color" = "mix($body-color, $body-bg, 20%)",
+      .where = "declarations"
+    )
+  }
+
+  # pkgdown sass
+  pkgdown_sass <- path_pkgdown("css", paste0("BS", bs_version), "pkgdown.sass")
+  code_sass <- path_pkgdown("css", paste0("BS", bs_version), "syntax-highlighting.sass")
+  all_sass <- paste(c(read_lines(pkgdown_sass), read_lines(code_sass)), collapse = "")
+  pkgdown_css <- sass::sass_partial(all_sass, bs_theme)
+  bs_theme <- bslib::bs_add_rules(bs_theme, pkgdown_css)
+
+  deps <- bslib::bs_theme_dependencies(bs_theme, sass::sass_options_get(output_style = "expanded"))
   # Add other dependencies - TODO: more of those?
   # Even font awesome had a too old version in R Markdown (no ORCID)
 
@@ -492,7 +587,16 @@ check_bootswatch_theme <- function(bootswatch_theme, bs_version, pkg) {
 }
 
 pkgdown_bslib_defaults <- function() {
-  list(`navbar-nav-link-padding-x` = "1rem")
+  list(
+    `navbar-nav-link-padding-x` = "1rem",
+    `primary` = "#0054AD",
+    `secondary` = "#e9ecef",
+    `navbar-bg` = "#f8f9fa",
+    `border-width` = "1px",
+    `code-bg` = "#f8f8f8",
+    `code-color` = "#333",
+    `fu-color` = "#4758AB"
+  )
 }
 
 logo_path <- function(pkg, depth) {
