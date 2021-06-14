@@ -76,18 +76,21 @@ render_page <- function(pkg = ".", name, data, path = "", depth = NULL, quiet = 
   )
   rendered <- render_template(template, components)
 
-  # footnotes
   if (pkg$bs_version > 3) {
     html <- xml2::read_html(rendered)
-    tweak_footnotes(html)
-    rendered <- as.character(html, options = character())
-  }
 
-  # navbar activation
-  if (pkg$bs_version > 3) {
-    html <- xml2::read_html(rendered)
+    # footnotes
+    tweak_footnotes(html)
+
+    # navbar activation
     activate_navbar(html, data$output_file %||% path, pkg)
+
+    # copy-paste button
+    tweak_sourcecode_divs(html)
+
+    # coerce back to text
     rendered <- as.character(html, options = character())
+
   }
 
   # remove TOC if useless
